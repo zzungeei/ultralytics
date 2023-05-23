@@ -575,7 +575,8 @@ class Cg7(nn.Module):
         return self.cv2(sum(y))
 
 class Cg8(nn.Module):
-    # TODO
+    """CSP Bottleneck with 2 convolutions."""
+
     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
         super().__init__()
         n = n * 2
@@ -583,10 +584,9 @@ class Cg8(nn.Module):
         self.cv1 = Conv(c1, self.c, 1, 1)
         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-        self.weights = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
 
     def forward(self, x):
+        """Forward pass through C2f layer."""
         y = [self.cv1(x)]
         y.extend(m(y[-1]) for m in self.m)
-        y = [w * tensor for w, tensor in zip(self.weights.sigmoid(), y)]
         return self.cv2(sum(y))
