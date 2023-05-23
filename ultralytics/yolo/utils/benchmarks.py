@@ -240,7 +240,7 @@ class ProfileModels:
 
         # Timed runs
         run_times = []
-        for _ in tqdm(range(self.num_timed_runs * 10), desc=engine_file):
+        for _ in tqdm(range(self.num_timed_runs * 50), desc=engine_file):
             results = model(input_data, verbose=False)
             run_times.append(results[0].speed['inference'])  # Convert to milliseconds
 
