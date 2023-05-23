@@ -10,9 +10,9 @@ import torch.nn.functional as F
 from .conv import Conv, DWConv, GhostConv, LightConv, RepConv
 from .transformer import TransformerBlock
 
-__all__ = [
-    'DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C3f', 'C2f', 'C3x', 'C3TR', 'C3Ghost', 'GhostBottleneck',
-    'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3']
+# __all__ = [
+    # 'DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C3f', 'C2f', 'C3x', 'C3TR', 'C3Ghost', 'GhostBottleneck',
+    # 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3']
 
 
 class DFL(nn.Module):
@@ -460,3 +460,133 @@ class C3f(nn.Module):
         y = [self.cv1(x), self.cv2(x)]
         y.extend(m(y[-1]) for m in self.m)
         return self.cv3(torch.cat(y, 1))
+
+class Cg1(nn.Module):
+    """CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, self.c, 1, 1)
+        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+
+    def forward(self, x):
+        """Forward pass through C2f layer."""
+        y = [self.cv1(x)]
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+class Cg2(nn.Module):
+    """CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, self.c, 3, 1)
+        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+
+    def forward(self, x):
+        """Forward pass through C2f layer."""
+        y = [self.cv1(x)]
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
+class Cg3(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv(self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(sum(y))
+
+
+class Cg4(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(sum(y))
+
+
+class Cg5(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+        self.weights = nn.Parameter(torch.ones(n+1))  # add this line, create learnable weights
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        y = [w * tensor for w, tensor in zip(self.weights, y)]
+        return self.cv2(sum(y))
+
+
+class Cg6(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+        self.weights = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        y = [w * tensor for w, tensor in zip(self.weights.sigmoid(), y)]
+        return self.cv2(sum(y))
+
+
+class Cg7(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+        self.weights = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        y = [w * tensor for w, tensor in zip(self.weights.tanh(), y)]
+        return self.cv2(sum(y))
+
+class Cg8(nn.Module):
+    # TODO
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, self.c, 1, 1)
+        self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+        self.weights = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
+
+    def forward(self, x):
+        y = [self.cv1(x)]
+        y.extend(m(y[-1]) for m in self.m)
+        y = [w * tensor for w, tensor in zip(self.weights.sigmoid(), y)]
+        return self.cv2(sum(y))

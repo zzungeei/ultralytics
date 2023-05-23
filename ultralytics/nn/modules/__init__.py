@@ -1,7 +1,8 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
-from .block import (C1, C2, C3, C3TR, DFL, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3f, C3Ghost, C3x, GhostBottleneck,
-                    HGBlock, HGStem, Proto, RepC3, Cxa, Cxb, Cxc, Cxd, Cxe, Cxf, Cxc_act)
+# from .block import (C1, C2, C3, C3TR, DFL, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3f, C3Ghost, C3x, GhostBottleneck,
+#                     HGBlock, HGStem, Proto, RepC3, Cxa, Cxb, Cxc, Cxd, Cxe, Cxf, Cxc_act)
+from .block import *
 from .conv import (CBAM, ChannelAttention, Concat, Conv, ConvTranspose, DWConv, DWConvTranspose2d, Focus, GhostConv,
                    LightConv, RepConv, SpatialAttention)
 from .head import Classify, Detect, Pose, RTDETRDecoder, Segment

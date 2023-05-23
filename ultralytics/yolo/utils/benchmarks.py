@@ -218,6 +218,16 @@ class ProfileModels:
     def get_onnx_model_info(self, onnx_file: str):
         return 0.0, 0.0
 
+    def iterative_sigma_clipping(self, data, sigma=2, max_iters=5):
+        data = np.array(data)
+        for _ in range(max_iters):
+            mean, std = np.mean(data), np.std(data)
+            clipped_data = data[(data > mean - sigma * std) & (data < mean + sigma * std)]
+            if len(clipped_data) == len(data):
+                break
+            data = clipped_data
+        return data
+
     def profile_tensorrt_model(self, engine_file: str):
         if not Path(engine_file).is_file():
             return 0.0, 0.0
@@ -260,6 +270,9 @@ class ProfileModels:
             start_time = time.time()
             sess.run([output_name], {input_name: input_data})
             run_times.append((time.time() - start_time) * 1000)  # Convert to milliseconds
+
+        # Sigma clipping
+        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=3)
 
         return np.mean(run_times), np.std(run_times)
 
