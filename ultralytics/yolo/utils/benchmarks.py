@@ -3,7 +3,7 @@
 Benchmark a YOLO model formats for speed and accuracy
 
 Usage:
-    from ultralytics.yolo.utils.benchmarks import ProfileModels, run_benchmarks
+    from ultralytics.yolo.utils.benchmarks import ProfileModels, benchmark
     ProfileModels(['yolov8n.yaml', 'yolov8s.yaml'])
     run_benchmarks(model='yolov8n.pt', imgsz=160)
 
@@ -256,7 +256,23 @@ class ProfileModels:
         sess = ort.InferenceSession(onnx_file, sess_options, providers=['CPUExecutionProvider'])
 
         input_tensor = sess.get_inputs()[0]
-        input_data = np.random.rand(*input_tensor.shape).astype(np.float16 if torch.cuda.is_available() else np.float32)
+        input_type = input_tensor.type
+
+        # Mapping ONNX datatype to numpy datatype
+        if 'float16' in input_type:
+            input_dtype = np.float16
+        elif 'float' in input_type:
+            input_dtype = np.float32
+        elif 'double' in input_type:
+            input_dtype = np.float64
+        elif 'int64' in input_type:
+            input_dtype = np.int64
+        elif 'int32' in input_type:
+            input_dtype = np.int32
+        else:
+            raise ValueError(f"Unsupported ONNX datatype {input_type}")
+
+        input_data = np.random.rand(*input_tensor.shape).astype(input_dtype)
         input_name = input_tensor.name
         output_name = sess.get_outputs()[0].name
 
@@ -271,9 +287,7 @@ class ProfileModels:
             sess.run([output_name], {input_name: input_data})
             run_times.append((time.time() - start_time) * 1000)  # Convert to milliseconds
 
-        # Sigma clipping
-        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=3)
-
+        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=3)  # sigma clipping
         return np.mean(run_times), np.std(run_times)
 
     def generate_table_row(self, model_name, t_onnx, t_engine, num_params, num_flops):
