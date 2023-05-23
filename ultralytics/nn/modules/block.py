@@ -532,12 +532,12 @@ class Cg5(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-        self.weights = nn.Parameter(torch.ones(n+1))  # add this line, create learnable weights
+        self.weight = nn.Parameter(torch.ones(n+1))  # add this line, create learnable weights
 
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
-        y = [w * tensor for w, tensor in zip(self.weights, y[1:])]
+        y = [w * tensor for w, tensor in zip(self.weight, y[1:])]
         return self.cv2(sum(y))
 
 
@@ -549,12 +549,12 @@ class Cg6(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-        self.weights = nn.Parameter(torch.ones(n + 1) * 5)  # add this line, create learnable weights
+        self.weight = nn.Parameter(torch.ones(n + 1) * 5)  # add this line, create learnable weights
 
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
-        y = [w * tensor for w, tensor in zip(self.weights.sigmoid(), y[1:])]
+        y = [w * tensor for w, tensor in zip(self.weight.sigmoid(), y[1:])]
         return self.cv2(sum(y))
 
 
@@ -566,12 +566,12 @@ class Cg7(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-        self.weights = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
+        self.weight = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
 
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
-        y = [w * tensor for w, tensor in zip(self.weights.tanh(), y[1:])]
+        y = [w * tensor for w, tensor in zip(self.weight.tanh(), y[1:])]
         return self.cv2(sum(y))
 
 class Cg8(nn.Module):
