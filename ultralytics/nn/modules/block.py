@@ -7,12 +7,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .conv import Conv, DWConv, GhostConv, LightConv, RepConv
+from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, Conv2
 from .transformer import TransformerBlock
 
+
 # __all__ = [
-    # 'DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C3f', 'C2f', 'C3x', 'C3TR', 'C3Ghost', 'GhostBottleneck',
-    # 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3']
+# 'DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C3f', 'C2f', 'C3x', 'C3TR', 'C3Ghost', 'GhostBottleneck',
+# 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3']
 
 
 class DFL(nn.Module):
@@ -308,36 +309,36 @@ class BottleneckCSP(nn.Module):
 # EXPERIMENTAL ---------------------------------------------------------------------------------------------------------
 
 
-class Cxa(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        n = n * 2
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+# class Cxa(nn.Module):
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         n = n * 2
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+#         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+#
+#     def forward(self, x):
+#         y = list(self.cv1(x).split((self.c, self.c), 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
-    def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
 
-
-class Cxb(nn.Module):
-    """BAD"""
-
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        n = n * 2
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv5(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv5((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-
-    def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+# class Cxb(nn.Module):
+#     """BAD"""
+#
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         n = n * 2
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv5(c1, 2 * self.c, 1, 1)
+#         self.cv2 = Conv5((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+#
+#     def forward(self, x):
+#         y = list(self.cv1(x).split((self.c, self.c), 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
 
 class Cxc(nn.Module):
@@ -461,37 +462,38 @@ class C3f(nn.Module):
         y.extend(m(y[-1]) for m in self.m)
         return self.cv3(torch.cat(y, 1))
 
-class Cg1(nn.Module):
-    """CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, self.c, 1, 1)
-        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+# class Cg1(nn.Module):
+#     """CSP Bottleneck with 2 convolutions."""
+#
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, self.c, 1, 1)
+#         self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+#
+#     def forward(self, x):
+#         """Forward pass through C2f layer."""
+#         y = [self.cv1(x)]
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
-    def forward(self, x):
-        """Forward pass through C2f layer."""
-        y = [self.cv1(x)]
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
-
-class Cg2(nn.Module):
-    """CSP Bottleneck with 2 convolutions."""
-
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, self.c, 3, 1)
-        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
-
-    def forward(self, x):
-        """Forward pass through C2f layer."""
-        y = [self.cv1(x)]
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+# class Cg2(nn.Module):
+#     """CSP Bottleneck with 2 convolutions."""
+#
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, self.c, 3, 1)
+#         self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+#
+#     def forward(self, x):
+#         """Forward pass through C2f layer."""
+#         y = [self.cv1(x)]
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
 
 class Cg3(nn.Module):
@@ -532,7 +534,7 @@ class Cg5(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-        self.weight = nn.Parameter(torch.ones(n+1))  # add this line, create learnable weights
+        self.weight = nn.Parameter(torch.ones(n + 1))  # add this line, create learnable weights
 
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
@@ -566,13 +568,14 @@ class Cg7(nn.Module):
         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-        self.weight = nn.Parameter(torch.ones(n+1) * 5)  # add this line, create learnable weights
+        self.weight = nn.Parameter(torch.ones(n + 1) * 5)  # add this line, create learnable weights
 
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
         y.extend(m(y[-1]) for m in self.m)
         y = [w * tensor for w, tensor in zip(self.weight.tanh(), y[1:])]
         return self.cv2(sum(y))
+
 
 class Cg8(nn.Module):
     """CSP Bottleneck with 2 convolutions."""
@@ -590,3 +593,84 @@ class Cg8(nn.Module):
         y = [self.cv1(x)]
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(sum(y))
+
+
+# Conv2() experiments --------------------------------------------------------------------------------------------------
+
+class Cxa(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv2(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
+class Cxb(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv2(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv2((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv2(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
+class Cg1(nn.Module):
+    """CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, self.c, 1, 1)
+        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Bottleneck611(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+
+    def forward(self, x):
+        """Forward pass through C2f layer."""
+        y = [self.cv1(x)]
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
+class Cg2(nn.Module):
+    """CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv2(c1, self.c, 1, 1)
+        self.cv2 = Conv2((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Bottleneck611(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+
+    def forward(self, x):
+        """Forward pass through C2f layer."""
+        y = [self.cv1(x)]
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
+class Bottleneck611(nn.Module):
+    """Standard bottleneck."""
+
+    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):  # ch_in, ch_out, shortcut, groups, kernels, expand
+        super().__init__()
+        c_ = int(c2 * e)  # hidden channels
+        self.cv1 = Conv2(c1, c_, k[0], 1)
+        self.cv2 = Conv2(c_, c2, k[1], 1, g=g)
+        self.add = shortcut and c1 == c2
+
+    def forward(self, x):
+        """'forward()' applies the YOLOv5 FPN to input data."""
+        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
