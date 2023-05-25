@@ -10,6 +10,7 @@ import torch.nn as nn
 from ultralytics.nn.modules import *
 from ultralytics.yolo.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.yolo.utils.checks import check_requirements, check_suffix, check_yaml
+from ultralytics.yolo.utils.loss import v8ClassificationLoss, v8DetectionLoss, v8PoseLoss, v8SegmentationLoss
 from ultralytics.yolo.utils.plotting import feature_visualization
 from ultralytics.yolo.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn, initialize_weights,
                                                 intersect_dicts, make_divisible, model_info, scale_img, time_sync)
@@ -99,7 +100,9 @@ class BaseModel(nn.Module):
         """
         if not self.is_fused():
             for m in self.model.modules():
-                if isinstance(m, (Conv, DWConv)) and hasattr(m, 'bn'):
+                if isinstance(m, (Conv, Conv2, DWConv)) and hasattr(m, 'bn'):
+                    if isinstance(m, Conv2):
+                        m.fuse_convs()
                     m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
                     delattr(m, 'bn')  # remove batchnorm
                     m.forward = m.forward_fuse  # update forward
@@ -169,6 +172,23 @@ class BaseModel(nn.Module):
         self.load_state_dict(csd, strict=False)  # load
         if verbose:
             LOGGER.info(f'Transferred {len(csd)}/{len(self.model.state_dict())} items from pretrained weights')
+
+    def loss(self, batch, preds=None):
+        """
+        Compute loss
+
+        Args:
+            batch (dict): Batch to compute loss on
+            pred (torch.Tensor | List[torch.Tensor]): Predictions.
+        """
+        if not hasattr(self, 'criterion'):
+            self.criterion = self.init_criterion()
+
+        preds = self.forward(batch['img']) if preds is None else preds
+        return self.criterion(preds, batch)
+
+    def init_criterion(self):
+        raise NotImplementedError('compute_loss() needs to be implemented by task heads')
 
 
 class DetectionModel(BaseModel):
@@ -246,6 +266,9 @@ class DetectionModel(BaseModel):
         y[-1] = y[-1][..., i:]  # small
         return y
 
+    def init_criterion(self):
+        return v8DetectionLoss(self)
+
 
 class SegmentationModel(DetectionModel):
     """YOLOv8 segmentation model."""
@@ -257,6 +280,9 @@ class SegmentationModel(DetectionModel):
     def _forward_augment(self, x):
         """Undocumented function."""
         raise NotImplementedError(emojis('WARNING ⚠️ SegmentationModel has not supported augment inference yet!'))
+
+    def init_criterion(self):
+        return v8SegmentationLoss(self)
 
 
 class PoseModel(DetectionModel):
@@ -270,6 +296,9 @@ class PoseModel(DetectionModel):
             LOGGER.info(f"Overriding model.yaml kpt_shape={cfg['kpt_shape']} with kpt_shape={data_kpt_shape}")
             cfg['kpt_shape'] = data_kpt_shape
         super().__init__(cfg=cfg, ch=ch, nc=nc, verbose=verbose)
+
+    def init_criterion(self):
+        return v8PoseLoss(self)
 
 
 class ClassificationModel(BaseModel):
@@ -337,6 +366,10 @@ class ClassificationModel(BaseModel):
                 i = types.index(nn.Conv2d)  # nn.Conv2d index
                 if m[i].out_channels != nc:
                     m[i] = nn.Conv2d(m[i].in_channels, nc, m[i].kernel_size, m[i].stride, bias=m[i].bias is not None)
+
+    def init_criterion(self):
+        """Compute the classification loss between predictions and true labels."""
+        return v8ClassificationLoss()
 
 
 class Ensemble(nn.ModuleList):
