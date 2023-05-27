@@ -49,7 +49,7 @@ class Conv2(Conv):
     def __init__(self, c1, c2, k=3, s=1, p=None, g=1, d=1, act=True):
         """Initialize Conv layer with given arguments including activation."""
         super().__init__(c1, c2, k, s, p, g=g, d=d, act=act)
-        self.cv2 = nn.Conv2d(c1, c2, 3, s, autopad(3, p, d), groups=g, dilation=d, bias=False)  # add 1x1 conv
+        self.cv2 = nn.Conv2d(c1, c2, 1, s, autopad(1, p, d), groups=g, dilation=d, bias=False)  # add 1x1 conv
 
     def forward(self, x):
         """Apply convolution, batch normalization and activation to input tensor."""

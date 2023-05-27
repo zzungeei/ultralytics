@@ -511,19 +511,19 @@ class C3f(nn.Module):
 #         return self.cv2(sum(y))
 
 
-class Cg4(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        n = n * 2
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-
-    def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(sum(y))
+# class Cg4(nn.Module):
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         n = n * 2
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+#         self.cv2 = Conv(self.c, c2, 3)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+#
+#     def forward(self, x):
+#         y = list(self.cv1(x).split((self.c, self.c), 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(sum(y))
 
 
 class Cg5(nn.Module):
@@ -693,6 +693,23 @@ class Cg3(nn.Module):
         return self.cv2(torch.cat(y, 1))
 
 
+class Cg4(nn.Module):
+    """CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, self.c, 1, 1)
+        self.cv2 = Conv((1 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Bottleneck22(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+
+    def forward(self, x):
+        """Forward pass through C2f layer."""
+        y = [self.cv1(x)]
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
+
+
 class Bottleneck611(nn.Module):
     """Standard bottleneck."""
 
@@ -706,3 +723,37 @@ class Bottleneck611(nn.Module):
     def forward(self, x):
         """'forward()' applies the YOLOv5 FPN to input data."""
         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+
+
+class Bottleneck22(nn.Module):
+    """Standard bottleneck."""
+
+    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):  # ch_in, ch_out, shortcut, groups, kernels, expand
+        super().__init__()
+        c_ = int(c2 * e)  # hidden channels
+        self.cv1 = Conv22(c1, c_, k[0], 1)
+        self.cv2 = Conv22(c_, c2, k[1], 1, g=g)
+        self.add = shortcut and c1 == c2
+
+    def forward(self, x):
+        """'forward()' applies the YOLOv5 FPN to input data."""
+        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+
+
+class Conv22(nn.Module):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+    default_act = nn.SiLU()  # default activation
+
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
+        """Initialize Conv layer with given arguments including activation."""
+        super().__init__()
+        self.cv1 = nn.Conv2d(c1, c2, 2, s, 0, groups=g, dilation=d, bias=False)
+        self.relu = nn.ReLU()
+        self.cv2 = nn.Conv2d(c2, c2, 2, s, 1, groups=g, dilation=d, bias=False)
+        self.bn1 = nn.BatchNorm2d(c2)
+        self.bn2 = nn.BatchNorm2d(c2)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+
+    def forward(self, x):
+        """Apply convolution, batch normalization and activation to input tensor."""
+        return self.act(self.bn2(self.cv2(self.relu(self.bn1(self.cv1(x))))))
