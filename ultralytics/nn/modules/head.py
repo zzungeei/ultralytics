@@ -10,7 +10,6 @@ import torch.nn as nn
 from torch.nn.init import constant_, xavier_uniform_
 
 from ultralytics.yolo.utils.tal import dist2bbox, make_anchors
-
 from .block import DFL, Proto
 from .conv import Conv, ConvTranspose
 from .transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
@@ -18,7 +17,8 @@ from .utils import bias_init_with_prob, linear_init_
 
 __all__ = ['Detect', 'Segment', 'Pose', 'Classify', 'RTDETRDecoder']
 
-class DetectFuse(nn.Module):
+
+class Detect(nn.Module):
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
     export = False  # export mode
@@ -41,7 +41,6 @@ class DetectFuse(nn.Module):
 
         self.upconv1 = ConvTranspose(c2 + c3, c2 + c3, 2, 2, 0)  # upsample to twice the size
         self.upconv2 = ConvTranspose(c2 + c3, c2 + c3, 2, 2, 0)  # upsample to twice the size
-
 
     def forward(self, x):
         """Concatenates and returns predicted bounding boxes and class probabilities."""
@@ -72,17 +71,17 @@ class DetectFuse(nn.Module):
         return y if self.export else (y, x)
 
     def bias_init(self):
-        return
         """Initialize Detect() biases, WARNING: requires stride availability."""
         m = self  # self.model[-1]  # Detect() module
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1
         # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # nominal class frequency
-        for a, b, s in zip(m.cv2, m.cv3, m.stride):  # from
-            a[-1].bias.data[:] = 1.0  # box
-            b[-1].bias.data[:m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
+        nb = self.reg_max * 4  # number of box channels
+        for a, s in zip(m.cv_out, m.stride):  # from
+            a.bias.data[:nb] = 1.0  # box
+            a.bias.data[nb:nb + m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls, .01 objects, 80 classes, 640 img
 
 
-class Detect(nn.Module):
+class DetectOriginal(nn.Module):
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
     export = False  # export mode
