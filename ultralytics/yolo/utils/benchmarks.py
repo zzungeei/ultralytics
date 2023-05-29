@@ -231,7 +231,7 @@ class ProfileModels:
         # return (num_layers, num_params, num_gradients, num_flops)
         return 0.0, 0.0, 0.0, 0.0
 
-    def iterative_sigma_clipping(self, data, sigma=2, max_iters=5):
+    def iterative_sigma_clipping(self, data, sigma=2, max_iters=3):
         data = np.array(data)
         for _ in range(max_iters):
             mean, std = np.mean(data), np.std(data)
