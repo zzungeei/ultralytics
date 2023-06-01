@@ -309,51 +309,51 @@ class BottleneckCSP(nn.Module):
 # EXPERIMENTAL ---------------------------------------------------------------------------------------------------------
 
 
-# class Cxa(nn.Module):
-#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-#         super().__init__()
-#         n = n * 2
-#         self.c = int(c2 * e)  # hidden channels
-#         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-#         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-#         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-#
-#     def forward(self, x):
-#         y = list(self.cv1(x).split((self.c, self.c), 1))
-#         y.extend(m(y[-1]) for m in self.m)
-#         return self.cv2(torch.cat(y, 1))
+class Cxa(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
 
 
-# class Cxb(nn.Module):
-#     """BAD"""
-#
-#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-#         super().__init__()
-#         n = n * 2
-#         self.c = int(c2 * e)  # hidden channels
-#         self.cv1 = Conv5(c1, 2 * self.c, 1, 1)
-#         self.cv2 = Conv5((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-#         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-#
-#     def forward(self, x):
-#         y = list(self.cv1(x).split((self.c, self.c), 1))
-#         y.extend(m(y[-1]) for m in self.m)
-#         return self.cv2(torch.cat(y, 1))
+class Cxb(nn.Module):
+    """BAD"""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv5(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv5((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
 
 
-# class Cxc(nn.Module):
-#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-#         super().__init__()
-#         n = n * 2
-#         self.c = int(c2 * e)  # hidden channels
-#         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-#         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-#         self.m = nn.ModuleList(Conv5(self.c, self.c, k=3) for _ in range(n))
-#
-#     def forward(self, x):
-#         y = list(self.cv1(x).split((self.c, self.c), 1))
-#         y.extend(m(y[-1]) for m in self.m)
-#         return self.cv2(torch.cat(y, 1))
+class Cxc(nn.Module):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        n = n * 2
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.m = nn.ModuleList(Conv5(self.c, self.c, k=3) for _ in range(n))
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
 
 
 class Cxc_act(nn.Module):
@@ -563,49 +563,49 @@ class Cg8(nn.Module):
 
 # Conv2() experiments --------------------------------------------------------------------------------------------------
 
-class Cxa(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        n = n * 2
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Conv2(self.c, self.c, k=3) for _ in range(n))
-
-    def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
-
-
-class Cxb(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        n = n * 2
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv2(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv2((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Conv2(self.c, self.c, k=3) for _ in range(n))
-
-    def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
-
-
-class Cxc(nn.Module):
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        n = n * 2
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv2(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv2((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
-
-    def forward(self, x):
-        y = list(self.cv1(x).split((self.c, self.c), 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+# class Cxa(nn.Module):
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         n = n * 2
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+#         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Conv2(self.c, self.c, k=3) for _ in range(n))
+#
+#     def forward(self, x):
+#         y = list(self.cv1(x).split((self.c, self.c), 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
+#
+#
+# class Cxb(nn.Module):
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         n = n * 2
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv2(c1, 2 * self.c, 1, 1)
+#         self.cv2 = Conv2((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Conv2(self.c, self.c, k=3) for _ in range(n))
+#
+#     def forward(self, x):
+#         y = list(self.cv1(x).split((self.c, self.c), 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
+#
+#
+# class Cxc(nn.Module):
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+#         super().__init__()
+#         n = n * 2
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv2(c1, 2 * self.c, 1, 1)
+#         self.cv2 = Conv2((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.m = nn.ModuleList(Conv(self.c, self.c, k=3) for _ in range(n))
+#
+#     def forward(self, x):
+#         y = list(self.cv1(x).split((self.c, self.c), 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
 
 class Cg5(nn.Module):
