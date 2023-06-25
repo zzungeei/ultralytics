@@ -10,10 +10,8 @@ import torch.nn.functional as F
 from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, Conv2
 from .transformer import TransformerBlock
 
-
-# __all__ = [
-# 'DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C3f', 'C2f', 'C3x', 'C3TR', 'C3Ghost', 'GhostBottleneck',
-# 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3']
+#__all__ = ('DFL', 'HGBlock', 'HGStem', 'SPP', 'SPPF', 'C1', 'C2', 'C3', 'C2f', 'C3x', 'C3TR', 'C3Ghost',
+#           'GhostBottleneck', 'Bottleneck', 'BottleneckCSP', 'Proto', 'RepC3')
 
 
 class DFL(nn.Module):
