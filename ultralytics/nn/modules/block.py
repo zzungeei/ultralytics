@@ -268,19 +268,36 @@ class GhostBottleneck(nn.Module):
         return self.conv(x) + self.shortcut(x)
 
 
-class Bottleneck(nn.Module):
-    """Standard bottleneck."""
+# class Bottleneck(nn.Module):
+#     """Standard bottleneck."""
+#
+#     def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):  # ch_in, ch_out, shortcut, groups, kernels, expand
+#         super().__init__()
+#         c_ = int(c2 * e)  # hidden channels
+#         self.cv1 = Conv(c1, c_, k[0], 1)
+#         self.cv2 = Conv(c_, c2, k[1], 1, g=g)
+#         self.add = shortcut and c1 == c2
+#
+#     def forward(self, x):
+#         """'forward()' applies the YOLOv5 FPN to input data."""
+#         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
-    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):  # ch_in, ch_out, shortcut, groups, kernels, expand
+
+class Bottleneck(nn.Module):
+    """Bottleneck with shortcut weight."""
+
+    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
+        # ch_in, ch_out, shortcut, groups, kernels, expand
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, k[0], 1)
         self.cv2 = Conv(c_, c2, k[1], 1, g=g)
         self.add = shortcut and c1 == c2
+        self.weight = nn.Parameter(torch.zeros(1))  # add this line, create learnable weights
 
     def forward(self, x):
         """'forward()' applies the YOLOv5 FPN to input data."""
-        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+        return x * (self.weight.sigmoid() * 2) + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
 class BottleneckCSP(nn.Module):
