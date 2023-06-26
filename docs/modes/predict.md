@@ -116,6 +116,7 @@ Below are code examples for using each source type:
     
         # Define remote image or video URL
         source = 'https://ultralytics.com/images/bus.jpg'
+        source = 'https://github.com/ultralytics/yolov5/releases/download/v1.0/decelera_landscape_min.mov'
     
         # Run inference on the source
         results = model(source)  # list of Results objects
