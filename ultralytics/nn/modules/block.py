@@ -298,7 +298,7 @@ class Bottleneck(nn.Module):
 
     def forward(self, x):
         """'forward()' applies the YOLOv5 FPN to input data."""
-        return x * (self.weight.sigmoid() * 2) + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+        return x * self.weight.sigmoid() + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
 class BottleneckCSP(nn.Module):
