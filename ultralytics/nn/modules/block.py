@@ -284,7 +284,7 @@ class GhostBottleneck(nn.Module):
 #         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
-class BottleneckWeight(nn.Module):
+class Bottleneck(nn.Module):
     """Bottleneck with shortcut weight."""
 
     def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
