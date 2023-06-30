@@ -11,7 +11,7 @@ from torch.nn.init import constant_, xavier_uniform_
 
 from ultralytics.yolo.utils.tal import dist2bbox, make_anchors
 from .block import DFL, Proto
-from .conv import Conv
+from .conv import Conv, autopad
 from .transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
 from .utils import bias_init_with_prob, linear_init_
 
@@ -70,6 +70,21 @@ class Detect(nn.Module):
             b[-1].bias.data[:m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
 
 
+class ConvSplit(nn.Module):
+    def __init__(self, c1, c2_list, k=(1, 1), s=1):
+        super().__init__()
+
+        assert c1 % len(c2_list) == 0, "Input channels must be divisible by the number of output channels lists"
+
+        self.c1 = c1 // len(c2_list)
+        self.cv = nn.ModuleList([nn.Conv2d(self.c1, c2, k, s, autopad(k)) for k, c2 in zip(k, c2_list)])
+
+    def forward(self, x):
+        chunks = x.split(self.c1, dim=1)  # Split the input tensor into chunks
+        outputs = [conv(chunk) for conv, chunk in zip(self.cv, chunks)]
+        return torch.cat(outputs, dim=1)  # Concatenate the outputs along the channel dimension
+
+
 class Detect(nn.Module):
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
@@ -90,9 +105,13 @@ class Detect(nn.Module):
         # self.cv2 = nn.ModuleList(
         #    nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch)
         # self.cv3 = nn.ModuleList(nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nc, 1)) for x in ch)
+        # self.cv23 = nn.ModuleList(
+        #    nn.Sequential(Conv(x, c23, 3, g=2), Conv(c23, c23, 3, g=2), nn.Conv2d(c23, self.no, 1)) for x in ch)
         self.cv23 = nn.ModuleList(
-            nn.Sequential(Conv(x, c23, 3, g=2), Conv(c23, c23, 3, g=2), nn.Conv2d(c23, self.no, 1)) for x in ch
-        )
+            nn.Sequential(Conv(x, c23, 3, g=2),
+                          Conv(c23, c23, 3, g=2),
+                          ConvSplit(c23, c2_list=[4 * self.reg_max, self.nc], k=(1, 1))) for x in ch)
+
         self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
 
     def forward(self, x):
