@@ -110,7 +110,7 @@ class Detect(nn.Module):
         self.cv23 = nn.ModuleList(
             nn.Sequential(Conv(x, c23, 3, g=2),
                           Conv(c23, c23, 3, g=2),
-                          ConvSplit(c23, c2_list=[4 * self.reg_max, self.nc], k=(1, 3))) for x in ch)
+                          ConvSplit(c23, c2_list=[4 * self.reg_max, self.nc], k=(3, 1))) for x in ch)
 
         self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
 
