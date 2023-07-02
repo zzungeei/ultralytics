@@ -34,9 +34,8 @@ class Detect(nn.Module):
         self.no = nc + self.reg_max * 4  # number of outputs per anchor
         self.stride = torch.zeros(self.nl)  # strides computed during build
         c2, c3 = max((16, ch[0] // 4, self.reg_max * 4)), max(ch[0], self.nc)  # channels
-        c2 = c3 = (c2 + c3) // 2 * 2
         self.cv2 = nn.ModuleList(
-            nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 3,1,1)) for x in ch)
+            nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch)
         self.cv3 = nn.ModuleList(nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nc, 1)) for x in ch)
         self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
 
@@ -86,7 +85,7 @@ class ConvSplit(nn.Module):
         return torch.cat(outputs, dim=1)  # Concatenate the outputs along the channel dimension
 
 
-class DetectNEW(nn.Module):
+class Detect(nn.Module):
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
     export = False  # export mode
@@ -106,12 +105,12 @@ class DetectNEW(nn.Module):
         # self.cv2 = nn.ModuleList(
         #    nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch)
         # self.cv3 = nn.ModuleList(nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nc, 1)) for x in ch)
-        # self.cv23 = nn.ModuleList(
-        #    nn.Sequential(Conv(x, c23, 3, g=2), Conv(c23, c23, 3, g=2), nn.Conv2d(c23, self.no, 1)) for x in ch)
         self.cv23 = nn.ModuleList(
-            nn.Sequential(Conv(x, c23, 3, g=2),
-                          Conv(c23, c23, 3, g=2),
-                          ConvSplit(c23, c2_list=[4 * self.reg_max, self.nc], k=(1, 1))) for x in ch)
+            nn.Sequential(Conv(x, c23, 3, g=2), Conv(c23, c23, 3, g=2), nn.Conv2d(c23, self.no, 1)) for x in ch)
+        # self.cv23 = nn.ModuleList(
+        #     nn.Sequential(Conv(x, c23, 3, g=2),
+        #                   Conv(c23, c23, 3, g=2),
+        #                   ConvSplit(c23, c2_list=[4 * self.reg_max, self.nc], k=(1, 1))) for x in ch)
 
         self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
 
