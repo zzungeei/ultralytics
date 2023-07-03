@@ -140,9 +140,10 @@ class Detect(nn.Module):
         m = self  # self.model[-1]  # Detect() module
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1
         # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # nominal class frequency
-        # for a, b, s in zip(m.cv2, m.cv3, m.stride):  # from
-        #     a[-1].bias.data[:] = 1.0  # box
-        #     b[-1].bias.data[:m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
+        n = 4 * m.reg_max  # number of box channels
+        for a, s in zip(m.cv23, m.stride):  # from
+            a[-1].bias.data[:n] = 1.0  # box
+            a[-1].bias.data[n:n + m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
 
 
 class Segment(Detect):
