@@ -142,7 +142,7 @@ class Detect(nn.Module):
         # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # nominal class frequency
         n = 4 * m.reg_max  # number of box channels
         for a, s in zip(m.cv23, m.stride):  # from
-            a[-1].bias.data[:n] = 1.0  # box
+            a[-1].bias.data[:n] = 0.0  # box
             a[-1].bias.data[n:n + m.nc] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
 
 
