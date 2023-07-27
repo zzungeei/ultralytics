@@ -94,7 +94,7 @@ class ConvSplit(nn.Module):
         return torch.cat(outputs, dim=1)  # Concatenate the outputs along the channel dimension
 
 
-class Detect(nn.Module):
+class DetectNEW(nn.Module):
     """YOLOv8 Detect head for detection models."""
     dynamic = False  # force grid reconstruction
     export = False  # export mode
